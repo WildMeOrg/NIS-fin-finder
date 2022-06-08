@@ -92,8 +92,12 @@ bin
 obj
 appsettings.json
 local.settings.json
+config/
 
 # Azurite artifacts
 __blobstorage__
 __queuestorage__
 __azurite_db*__.json
+
+# VS Code
+.vscode
