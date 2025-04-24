@@ -67,7 +67,7 @@ UserController.createUser = async (context, req) => {
                     fullname:userDetail.full_name,
                     setPasswordURL:`${AppConstant.C.webAppUrl}/setpassword/${userDetail.token}`,
                     domainURL:AppConstant.C.webAppUrl,
-                    feedbackURL:'info@wildlifedetection.org',
+                    feedbackURL:'finfinder@wildme.org',
                 }
             });
         }
@@ -222,7 +222,7 @@ UserController.setPassword = async (context,req) => {
                         dynamicTemplateData:{
                             fullname:userResult.full_name,
                             dateTime:moment().format(AppConstant.C.dateFormat.momentDateTimeFormat),
-                            feedbackURL:'info@wildlifedetection.org',
+                            feedbackURL:'finfinder@wildme.org',
                         }
                     });
                 } else {
@@ -233,7 +233,7 @@ UserController.setPassword = async (context,req) => {
                             fullname:userResult.full_name,
                             domainURL:AppConstant.C.webAppUrl,
                             finFinderUrl:AppConstant.C.finFinderUrl,
-                            feedbackURL:'info@wildlifedetection.org',
+                            feedbackURL:'finfinder@wildme.org',
                         }
                     });
                 }
@@ -408,7 +408,7 @@ UserController.sendForgotPasswordEmail = async(context,req) => {
                     dynamicTemplateData:{
                         fullname:result.full_name,
                         setPasswordURL:`${AppConstant.C.webAppUrl}/setpassword/${token}/1`,
-                        feedbackURL:'info@wildlifedetection.org',
+                        feedbackURL:'finfinder@wildme.org',
                     }
                 });
             }

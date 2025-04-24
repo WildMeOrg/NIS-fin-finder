@@ -13,8 +13,8 @@ class EmailHelper {
 EmailHelper.sendEmail = function (emailObj) {
     try {
         const msg = {
-            to: emailObj.to?emailObj.to:'info@wildlifedetection.org',
-            from: emailObj.from?emailObj.from:'info@wildlifedetection.org',
+            to: emailObj.to?emailObj.to:'finfinder@wildme.org',
+            from: emailObj.from?emailObj.from:'finfinder@wildme.org',
             subject: emailObj.subject?emailObj.subject:'Default Subject',
             //text: 'and easy to do anywhere, even with Node.js',
             html: emailObj.html?emailObj.html:'<h1>Testing!!!</h1>',
@@ -31,7 +31,7 @@ EmailHelper.sendEmail = function (emailObj) {
 EmailHelper.sendTemplateEmail = function(emailObj) {
     try {
         const msg = {
-            from: "info@wildlifedetection.org",
+            from: "finfinder@wildme.org",
             template_id: emailObj.templateId,
             personalizations: [{
                 to: emailObj.to?emailObj.to:[{email:'dmunasinghe@conservation.org'}],
@@ -40,8 +40,8 @@ EmailHelper.sendTemplateEmail = function(emailObj) {
             }],
           };
         /* const msg = {
-            to: emailObj.to?emailObj.to:'info@wildlifedetection.org',
-            from: emailObj.from?emailObj.from:'info@wildlifedetection.org',
+            to: emailObj.to?emailObj.to:'finfinder@wildme.org',
+            from: emailObj.from?emailObj.from:'finfinder@wildme.org',
             subject: emailObj.subject?emailObj.subject:'Default Subject',
             //text: 'and easy to do anywhere, even with Node.js',
             html: emailObj.html?emailObj.html:'<h1>Testing!!!</h1>',
