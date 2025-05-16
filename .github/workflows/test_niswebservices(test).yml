@@ -63,11 +63,15 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_372CEA063E7849AA956753E4421FA9C1 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2480CC89AB4140A2ADBCD84A28557365 }}
 
+      - name: Debug Azure Web Apps
+        run: |
+          az functionapp list --output table
+
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
         id: fa
         with:
-          app-name: 'NisWebServices'
+          app-name: 'niswebservices-test'
           slot-name: 'test'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
 
