@@ -2,7 +2,7 @@ const { Op } = require("sequelize");
 const models = require('../models');
 const utils= require('../utils.js');
 const authHelper = require('../helper/authHelper');
-const AppConstant = require('../helper/appConstant');
+const constants = require('../config/constants');
 
 module.exports = async function (context, req) {
     try{
@@ -24,7 +24,7 @@ module.exports = async function (context, req) {
             }else if(req.query.view == "all"){
                 const where = {};
                 if(!utils.isSuperAdmin(context,req)){
-                    where.id = {[Op.ne]: AppConstant.C.trainingRoleId}
+                    where.id = {[Op.ne]: constants.ROLE_ID.TRAINING}
                 }
                 const result = await models.roles.findAll({where});
                 const modifiedResults = utils.modifiedResult(req, result);
@@ -58,7 +58,7 @@ module.exports = async function (context, req) {
                         order: [
                             orderBy?[`${sort}`, `${order}`]:['id', 'ASC']
                         ],
-                        offset: offset, limit: limit 
+                        offset: offset, limit: limit
                     }
                 );
                 const modifiedResults = utils.modifiedResult(req, result);

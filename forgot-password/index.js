@@ -1,7 +1,3 @@
-// var emailHandler = require('../handler/emailer');
-// var random = require('../handler/generateRandomString')
-// var models = require('../models');
-// var tokenHandler = require('../handler/tokenVerification');
 const userControllerObj = require('../controllers/user.js');
 const utils= require('../utils.js');
 
