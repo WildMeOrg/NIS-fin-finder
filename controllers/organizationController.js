@@ -122,14 +122,12 @@ OrganizationController.orgRegistration = async (context, req) => {
             return utils.sendResponse(context,req,400,utils.errorFormater(400,errors));
         }
         const result = await models.user.findOne({where:{id:1}});
-        let toArr = [{email:'dmunasinghe@conservation.org'}];
+        let toArr = [{email:config.email.contactEmail}];
         if(result){
             toArr.push({email:result.email});
         }
         emailHelper.sendTemplateEmail({
-            //to:[{email:'ambrish.singh@rsystems.com'},{email:'shivani.sharma@rsystems.com'},{email:'dmunasinghe@conservation.org'}],
             to:toArr,
-            //cc:[{email:'efegraus@conservation.org'},{email:'dmunasinghe@conservation.org'}],
             templateId:config.email.templates.orgRegistration,
             dynamicTemplateData:{
                 fullname:`${reqBody.first_name} ${reqBody.last_name}`,
