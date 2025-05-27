@@ -4,28 +4,39 @@ const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
 const basename = path.basename(__filename);
-const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/../config/config.json')[env];
+const config = require('../config');
 const db = {};
 
 let sequelize;
-if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
-  console.log("Creating connection with if conditions ", process.env[config.use_env_variable], config)
-} else {
-  sequelize = new Sequelize(config.database, config.username, config.password, config);
-  console.log("Creating connection with else conditions ", config.database, config.username, config.password, config)
-}
+
+sequelize = new Sequelize(
+    config.mysql.database,
+    config.mysql.user,
+    config.mysql.password,
+    {
+      host: config.mysql.host,
+      dialect: config.mysql.dialect,
+      logging: config.mysql.logging,
+      pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+      }
+    }
+);
 
 fs
-  .readdirSync(__dirname)
-  .filter(file => {
-    return (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.js');
-  })
-  .forEach(file => {
-    const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
-    db[model.name] = model;
-  });
+    .readdirSync(__dirname)
+    .filter(file => {
+      return (file.indexOf('.') !== 0) &&
+          (file !== basename) &&
+          (file.slice(-3) === '.js');
+    })
+    .forEach(file => {
+      const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
+      db[model.name] = model;
+    });
 
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {
@@ -36,6 +47,8 @@ Object.keys(db).forEach(modelName => {
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
+// --- Associations ---
+
 db.user.belongsTo(db.user, { foreignKey: "added_by", as:'addedBy' });
 
 db.organizations.hasMany(db.user, { foreignKey: "organization_id" });
@@ -45,19 +58,16 @@ db.organizations.belongsTo(db.geographic_location, { foreignKey: "country_id", a
 db.user.belongsTo(db.geographic_location, { foreignKey: "country_id", as:'countryDetail' });
 
 db.user.belongsToMany(db.roles,{through:'user_roles', as:'rolesDetail',foreignKey: "user_id"});
-db.roles.belongsToMany(db.user,{through:'user_roles', as:'usersDetail',foreignKey: "role_id"});
+db.roles.belongsToMany(db.user,{through:'user_roles', as:'usersDetail',foreignKey: "role_id" });
 
-// db.observation.hasMany(db.observation_report, { foreignKey: "observation_id", as:'reportDetail' });
 db.observation_report.belongsTo(db.observation, { foreignKey: "observation_id", as:'reportObservationDetail' });
-
-// db.user.hasMany(db.observation_report, { foreignKey: "user_id" });
 db.observation_report.belongsTo(db.user, { foreignKey: "user_id", as:'reportUserDetail' });
 
 db.observation.belongsToMany(db.user,{through:'observation_report', as:'reportUserDetail', foreignKey: "observation_id"});
-db.user.belongsToMany(db.observation,{through:'observation_report', as:'observationReportDetail', foreignKey: "user_id"});
+db.user.belongsToMany(db.observation,{through:'observation_report', as:'observationReportDetail', foreignKey: "user_id" });
 
 db.observation.belongsToMany(db.taxonomies,{through:'observation_taxon', as:'taxonDetail', foreignKey: "observation_id"});
-db.taxonomies.belongsToMany(db.observation,{through:'observation_taxon', as:'observationDetail', foreignKey: "taxon_id"});
+db.taxonomies.belongsToMany(db.observation,{through:'observation_taxon', as:'observationDetail', foreignKey: "taxon_id" });
 
 db.user.hasMany(db.observation,{foreignKey:"user_id"});
 db.observation.belongsTo(db.user, { foreignKey: "user_id", as:'userDetail' });
