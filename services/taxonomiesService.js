@@ -7,7 +7,8 @@ const { Op } = require("sequelize");
 const fs = require('fs');
 const path = require('path');
 const { Parser } = require('json2csv');
-const AppConstant = require('../helper/appConstant');
+const config = require('../config');
+const constants = require('../config/constants');
 
 class TaxonomiesService{
     constructor(){
@@ -21,7 +22,7 @@ TaxonomiesService.updateDetail = (imageId,imageDetail) => {
             resolve(data);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 TaxonomiesService.gettaxonomies = (context,req) => {
@@ -32,7 +33,7 @@ TaxonomiesService.gettaxonomies = (context,req) => {
             if(queryFilter.where.taxon_id){
                 const data = await models.taxonomies.findOne(queryFilter);
                 if(!data){
-                    const result = utils.successFormater(200,{},AppConstant.EC.NO_RECORD_FOUND);
+                    const result = utils.successFormater(200,{},constants.MESSAGES.NO_RECORD_FOUND);
                     utils.sendResponse(context,req,200,result);
                 } else{
                     const modifiedResults = utils.modifiedResult(req, data);
@@ -43,16 +44,16 @@ TaxonomiesService.gettaxonomies = (context,req) => {
                 const modifiedResults = utils.modifiedResult(req, results);
                 if(count>0 && reqQuery.isDownload && reqQuery.type === 'csv'){
                     const uploadFileDetail = await TaxonomiesService.downloadDataAsCSV(context,req,modifiedResults);
-                    const result = utils.successFormater(200,uploadFileDetail,AppConstant.EC.FILE_CREATED_SUCCESSFULLY);
+                    const result = utils.successFormater(200,uploadFileDetail,constants.MESSAGES.FILE_CREATED_SUCCESSFULLY);
                     utils.sendResponse(context,req,200,result);
                 } else {
                     resolve({data:modifiedResults,dataCount:count});
-                }                
-            }                        
+                }
+            }
         } catch (error) {
             console.log("error===========",error);
             reject(error);
-        } 
+        }
     });
 }
 
@@ -67,7 +68,7 @@ TaxonomiesService.prepareQueryFilter = (context,req) => {
             const sort = reqQuery.sort || (req.body && req.body.sort);
             const orderBy = order && sort?true:false;
             if(orderBy) {
-                queryFilter.order = orderBy?[[`${sort}`, `${order}`]]:[['id', AppConstant.C.defaultOrder]]
+                queryFilter.order = orderBy?[[`${sort}`, `${order}`]]:[['id', constants.DEFAULTS.ORDER]]
             }
             /* if(utils.isOrgAdmin(context,req)){
                 userWhere.organization_id = req.userDetail.organizationId; // loggedin user org ID
@@ -76,7 +77,7 @@ TaxonomiesService.prepareQueryFilter = (context,req) => {
             } */
             if(!utils.isEmpty(reqQuery.taxonId)){
                 queryFilter.where.taxon_id = reqQuery.taxonId;
-            } 
+            }
             queryFilter.where = searchString ? {...queryFilter.where,
                 [Op.or]: [
                     (moment(new Date(searchString)).isValid())?{ created_at: {[Op.gte]: utils.convertToUTC(req,`${searchString} 00:00:00`),[Op.lte]: utils.convertToUTC(req,`${searchString} 23:59:59`)} }:{},
@@ -91,7 +92,7 @@ TaxonomiesService.prepareQueryFilter = (context,req) => {
             queryFilter.attributes = ['taxon_id','kingdom','phylum','class','subclass','order','family','genus','species','scientific_name','taxon_level','authority','common_name_english','other_common_names_english','taxonomic_notes','spanish_names','french_names','iucn_id','iucn_assessment','cites_id','cites_status','geographical_distribution','geographical_distribution_iso','iucn_reference_url','gbif_reference_url','cites_reference_url','created_at']
             if(!reqQuery.isDownload){
                 const page = reqQuery.page?parseInt(reqQuery.page):1;
-                const limit = reqQuery.limit?parseInt(reqQuery.limit):AppConstant.C.defaultLimit;
+                const limit = reqQuery.limit?parseInt(reqQuery.limit):constants.DEFAULTS.LIMIT;
                 const offset = (page - 1) * limit;
                 queryFilter.offset = offset;
                 queryFilter.limit = limit;
@@ -99,7 +100,7 @@ TaxonomiesService.prepareQueryFilter = (context,req) => {
             resolve(queryFilter);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 
@@ -132,10 +133,10 @@ TaxonomiesService.prepareSaveData = (req) => {
     preparedData.gbif_reference_url = reqBody.gbif_reference_url?reqBody.gbif_reference_url:'';
     preparedData.cites_reference_url = reqBody.cites_reference_url?reqBody.cites_reference_url:'';
     if(reqBody.taxon_id){
-        preparedData.updated_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
+        preparedData.updated_at = moment().format(constants.DATE_FORMAT.DB);
     } else {
-        preparedData.created_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
-        preparedData.updated_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
+        preparedData.created_at = moment().format(constants.DATE_FORMAT.DB);
+        preparedData.updated_at = moment().format(constants.DATE_FORMAT.DB);
     }
     return preparedData;
 }
@@ -147,7 +148,7 @@ TaxonomiesService.saveTaxonomies = (context,req,preparedData) => {
         } catch (error) {
 
             reject(error);
-        } 
+        }
     });
 }
 TaxonomiesService.updateTaxonomies = (taxonId,preparedData) => {
@@ -157,7 +158,7 @@ TaxonomiesService.updateTaxonomies = (taxonId,preparedData) => {
             resolve(data);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 TaxonomiesService.downloadDataAsCSV = (context,req,rows) => {
@@ -200,13 +201,13 @@ TaxonomiesService.downloadDataAsCSV = (context,req,rows) => {
                 fileName:`Taxonomies_${Date.now()}.csv`,
                 fileContent:csv
             }
-            /* let writer = fs.createWriteStream(`Taxonomies_${Date.now()}.csv`); 
+            /* let writer = fs.createWriteStream(`Taxonomies_${Date.now()}.csv`);
             writer.write(csv); */
-            const fileDetail = await TaxonomiesService.uploadTmpFiles(fileObj);   
-            resolve(fileDetail);                   
+            const fileDetail = await TaxonomiesService.uploadTmpFiles(fileObj);
+            resolve(fileDetail);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 TaxonomiesService.uploadTmpFiles = (imageObj) => {
@@ -214,7 +215,7 @@ TaxonomiesService.uploadTmpFiles = (imageObj) => {
         try {
             const imageDetail = {};
             // Create the BlobServiceClient object which will be used to create a container client
-            const blobServiceClient = BlobServiceClient.fromConnectionString(AppConstant.C.blobConnectionString);
+            const blobServiceClient = BlobServiceClient.fromConnectionString(config.blob.connectionString);
             // Get a reference to a container
             const containerClient = blobServiceClient.getContainerClient('tmp-files');
             const blobName = imageObj.fileName;
@@ -227,7 +228,7 @@ TaxonomiesService.uploadTmpFiles = (imageObj) => {
             resolve(imageDetail);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 TaxonomiesService.saveTaxonomiesTrans = (arrOfObj)=>{
@@ -265,8 +266,8 @@ TaxonomiesService.saveTaxonomiesTrans = (arrOfObj)=>{
             }
             resolve(result);
         } catch (error) {
-            reject(error);           
+            reject(error);
         }
-    });    
+    });
 }
 module.exports = TaxonomiesService;

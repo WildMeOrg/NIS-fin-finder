@@ -7,7 +7,7 @@ const utils = require('../utils.js');
 const { Op } = require("sequelize");
 const fs = require('fs');
 const path = require('path');
-const AppConstant = require('../helper/appConstant');
+const constants = require('../config/constants');
 
 class UserService{
     constructor(){
@@ -22,7 +22,7 @@ UserService.getUsers = (context,req) => {
             if(!utils.isEmpty(reqQuery.id)){
                 const data = await models.user.findOne(queryFilter);
                 if(!data){
-                    const result = utils.successFormater(200,{},AppConstant.EC.NO_RECORD_FOUND);
+                    const result = utils.successFormater(200,{},constants.MESSAGES.NO_RECORD_FOUND);
                     utils.sendResponse(context,req,200,result);
                 } else{
                     const modifiedResults = utils.modifiedResult(req, data);
@@ -36,11 +36,11 @@ UserService.getUsers = (context,req) => {
                 } else {
                     resolve({data:modifiedResults,dataCount:count});
                 }
-            }                        
+            }
         } catch (error) {
             console.log("error===========",error);
             reject(error);
-        } 
+        }
     });
 }
 
@@ -55,30 +55,30 @@ UserService.prepareQueryFilter = (context,req) => {
             const sort = reqQuery.sort || (req.body && req.body.sort);
             const orderBy = order && sort?true:false;
             if(!reqQuery.view){
-                const adminRoleUsers = await models.user_roles.findAll({where:{role_id:AppConstant.C.superAdminRoleId}});
+                const adminRoleUsers = await models.user_roles.findAll({where:{role_id:constants.ROLE_ID.SUPER_ADMIN}});
                 let adminRoleUserArr = [];
                 adminRoleUsers.map(obj=>{
                     adminRoleUserArr.push(obj.user_id);
                 });
                 if(adminRoleUserArr.length){
                     queryFilter.where.id = {[Op.notIn]: adminRoleUserArr};
-                }      
-            }                  
+                }
+            }
             if(orderBy && ['country_name'].includes(sort)){
                 queryFilter.order = [[{model:models.geographic_location,as:'countryDetail'},'name', `${order}`]]
             } else if(orderBy && ['org_name'].includes(sort)){
                 queryFilter.order = [[{model:models.organizations,as:'organizationDetail'},'name', `${order}`]]
             } else if(orderBy && ['role_name'].includes(sort)){
-                queryFilter.order = [[{model:models.roles,as:'rolesDetail'},'name', `${order}`]]                
+                queryFilter.order = [[{model:models.roles,as:'rolesDetail'},'name', `${order}`]]
             } else {
-                queryFilter.order = orderBy?[[`${sort}`, `${order}`]]:[['id', AppConstant.C.defaultOrder]]
+                queryFilter.order = orderBy?[[`${sort}`, `${order}`]]:[['id', constants.DEFAULTS.ORDER]]
             }
             if(utils.isOrgAdmin(context,req) && !utils.isSuperAdmin(context,req)){
                 queryFilter.where.organization_id = req.userDetail.organizationId;
             }
             if(!utils.isEmpty(reqQuery.id)){
                 queryFilter.where.id = reqQuery.id;
-            } 
+            }
             if(!utils.isEmpty(reqQuery.orgId)){
                 queryFilter.where.organization_id = reqQuery.orgId;
             }
@@ -93,7 +93,7 @@ UserService.prepareQueryFilter = (context,req) => {
                     //{ '$rolesDetail.name$': {[Op.like]: `%${searchString}%`} }
                 ]
                 } : {...queryFilter.where};
-            
+
             queryFilter.attributes = ['id', 'first_name', 'last_name', 'full_name', 'phone', 'street_address', 'city', 'state', 'country_code','postal_code', 'email', 'active', 'title','created_at','updated_at']
             queryFilter.include = [
                 {
@@ -125,7 +125,7 @@ UserService.prepareQueryFilter = (context,req) => {
             //queryFilter.subQuery = false;
             if(!reqQuery.isDownload && !reqQuery.view){
                 const page = reqQuery.page?parseInt(reqQuery.page):1;
-                const limit = reqQuery.limit?parseInt(reqQuery.limit):AppConstant.C.defaultLimit;
+                const limit = reqQuery.limit?parseInt(reqQuery.limit):constants.DEFAULTS.LIMIT;
                 const offset = (page - 1) * limit;
                 queryFilter.offset = offset;
                 queryFilter.limit = limit;
@@ -133,7 +133,7 @@ UserService.prepareQueryFilter = (context,req) => {
             resolve(queryFilter);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 module.exports = UserService;

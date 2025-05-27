@@ -7,7 +7,8 @@ const utils = require('../utils.js');
 const { Op } = require("sequelize");
 const { Parser } = require('json2csv');
 const path = require('path');
-const AppConstant = require('../helper/appConstant');
+const config = require('../config');
+const constants = require('../config/constants');
 const emailHelper = require('../helper/emailHelper.js');
 class ObservationService{
     constructor(){
@@ -21,7 +22,7 @@ ObservationService.uploadObservationImageUsingMultipart = (req) => {
             const reqBody = req.body;
             const fileDetail = {};
             // Create the BlobServiceClient object which will be used to create a container client
-            const blobServiceClient = BlobServiceClient.fromConnectionString(AppConstant.C.blobConnectionString);
+            const blobServiceClient = BlobServiceClient.fromConnectionString(config.blob.connectionString);
             //const createContainerResponse = await containerClient.create().catch(err=>console.log("container create error ===== ",err));
             // Get a reference to a container
             console.log("reqBody============",reqBody);
@@ -43,8 +44,8 @@ ObservationService.uploadObservationImageUsingMultipart = (req) => {
             fileDetail.storage_file_url = blockBlobClient.url;
             const uploadblobResponse = await blockBlobClient.upload(parts[0].data, parts[0].data.length,options);
             fileDetail.request_id = uploadblobResponse.requestId;
-            fileDetail.created_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
-            fileDetail.updated_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
+            fileDetail.created_at = moment().format(constants.DATE_FORMAT.DB);
+            fileDetail.updated_at = moment().format(constants.DATE_FORMAT.DB);
             fileDetail.request_from = req.requestFrom;
             if(!utils.isEmpty(reqBody.latitude) && !utils.isEmpty(reqBody.longitude)){
                 const point = { type: 'Point', coordinates: [reqBody.longitude, reqBody.latitude]}; // GeoJson format: [lng, lat]
@@ -54,7 +55,7 @@ ObservationService.uploadObservationImageUsingMultipart = (req) => {
         } catch (error) {
             console.log("error=======",error);
             reject("Issue in upload file, Please try latar!!!");
-        } 
+        }
     });
 }
 ObservationService.uploadObservationImageUsingContent = (req) => {
@@ -63,7 +64,7 @@ ObservationService.uploadObservationImageUsingContent = (req) => {
             const reqBody = req.body;
             const fileDetail = {};
             // Create the BlobServiceClient object which will be used to create a container client
-            const blobServiceClient = BlobServiceClient.fromConnectionString(AppConstant.C.blobConnectionString);
+            const blobServiceClient = BlobServiceClient.fromConnectionString(config.blob.connectionString);
             // Get a reference to a container
             const containerClient = blobServiceClient.getContainerClient('observation-images');
             //const createContainerResponse = await containerClient.create().catch(err=>console.log("container create error ===== ",err));
@@ -83,8 +84,8 @@ ObservationService.uploadObservationImageUsingContent = (req) => {
             fileDetail.storage_file_url = blockBlobClient.url;
             const uploadblobResponse = await blockBlobClient.upload(buff, buff.length,options);
             fileDetail.request_id = uploadblobResponse.requestId;
-            fileDetail.created_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
-            fileDetail.updated_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
+            fileDetail.created_at = moment().format(constants.DATE_FORMAT.DB);
+            fileDetail.updated_at = moment().format(constants.DATE_FORMAT.DB);
             fileDetail.request_from = req.requestFrom;
             if(!utils.isEmpty(reqBody.latitude) && !utils.isEmpty(reqBody.longitude)){
                 const point = { type: 'Point', coordinates: [reqBody.longitude, reqBody.latitude]}; // GeoJson format: [lng, lat]
@@ -94,12 +95,12 @@ ObservationService.uploadObservationImageUsingContent = (req) => {
         } catch (error) {
             console.log("error=======",error);
             reject("Issue in upload file, Please try latar!!!");
-        } 
+        }
     });
 }
 ObservationService.getJobId = (req,fileDetail) => {
     return new Promise( async (resolve,reject)=>{
-        const tpData = await models.tp_api_log.create({api_name:'cv_lightnet',api_url:`${AppConstant.C.wildMeBaseUrl}/detect/cnn/lightnet/`,api_method:'POST',request_time:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)});
+        const tpData = await models.tp_api_log.create({api_name:'cv_lightnet',api_url:`${config.urls.wildMeBase}/detect/cnn/lightnet/`,api_method:'POST',request_time:moment().format(constants.DATE_FORMAT.DB)});
         try {
             var data = JSON.stringify({
             "model_tag": "fins_enforcement_v0",
@@ -108,7 +109,7 @@ ObservationService.getJobId = (req,fileDetail) => {
             "labeler_algo": "densenet",
             "labeler_model_tag": "fins_enforcement_v0",
             "use_labeler_species": true,
-            "callback_url":AppConstant.C.observationCallbackURL,
+            "callback_url":config.urls.observationCallback,
             "callback_detailed":true,
             "image_uuid_list": [
                 fileDetail.storage_file_url  //"https://www.flukebook.org/wildbook_data_dir/0/3/03546226-3cc9-4c19-928f-d6cd85ac282a/3271.JPG"
@@ -117,8 +118,8 @@ ObservationService.getJobId = (req,fileDetail) => {
             models.tp_api_log.update({request_data:JSON.stringify(data)},{where : {id: tpData.id}})
             var config = {
             method: 'post',
-            url: `${AppConstant.C.wildMeBaseUrl}/detect/cnn/lightnet/`,
-            headers: { 
+            url: `${config.urls.wildMeBase}/detect/cnn/lightnet/`,
+            headers: {
                 'Content-Type': 'application/json'
             },
             data : data
@@ -126,56 +127,56 @@ ObservationService.getJobId = (req,fileDetail) => {
 
             axios(config)
             .then(function (response) {
-                models.tp_api_log.update({response_data:JSON.stringify(response.data),response_time:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)},{where : {id: tpData.id}})
+                models.tp_api_log.update({response_data:JSON.stringify(response.data),response_time:moment().format(constants.DATE_FORMAT.DB)},{where : {id: tpData.id}})
                 if(response && response.data.response && response.data.status && response.data.status.code && response.data.status.code != 200){
-                    emailHelper.sendEmail({to:AppConstant.C.defaultAppAlert,subject:'CV Lightnet API Invalid Response',html:JSON.stringify(response.data)});
+                    emailHelper.sendEmail({to:config.email.defaultRecipients,subject:'CV Lightnet API Invalid Response',html:JSON.stringify(response.data)});
                 }
                 resolve(response.data);
             })
             .catch(function (error) {
-                models.tp_api_log.update({response_data:JSON.stringify(error),response_time:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)},{where : {id: tpData.id}})
-                emailHelper.sendEmail({to:AppConstant.C.defaultAppAlert,subject:'CV lightnet API down',html:JSON.stringify(error)});
+                models.tp_api_log.update({response_data:JSON.stringify(error),response_time:moment().format(constants.DATE_FORMAT.DB)},{where : {id: tpData.id}})
+                emailHelper.sendEmail({to:config.email.defaultRecipients,subject:'CV lightnet API down',html:JSON.stringify(error)});
                 reject(error);
             });
 
         } catch (error) {
-            models.tp_api_log.update({response_data:JSON.stringify(error),response_time:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)},{where : {id: tpData.id}})
-            emailHelper.sendEmail({to:AppConstant.C.defaultAppAlert,subject:'CV lightnet API down',html:JSON.stringify(error)});
+            models.tp_api_log.update({response_data:JSON.stringify(error),response_time:moment().format(constants.DATE_FORMAT.DB)},{where : {id: tpData.id}})
+            emailHelper.sendEmail({to:config.email.defaultRecipients,subject:'CV lightnet API down',html:JSON.stringify(error)});
             reject(error);
-        } 
+        }
     });
 }
 
 ObservationService.getJobIdResult = (req,fileDetail) => {
     return new Promise( async (resolve,reject)=>{
-        const tpData = await models.tp_api_log.create({api_name:'cv_result',api_url:`${AppConstant.C.wildMeBaseUrl}/job/result/?jobid=${fileDetail.cv_jobid}&__format__=false`,api_method:'GET',request_time:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)});
+        const tpData = await models.tp_api_log.create({api_name:'cv_result',api_url:`${config.urls.wildMeBase}/job/result/?jobid=${fileDetail.cv_jobid}&__format__=false`,api_method:'GET',request_time:moment().format(constants.DATE_FORMAT.DB)});
 
         try {
 
             var config = {
             method: 'get',
-            url: `${AppConstant.C.wildMeBaseUrl}/job/result/?jobid=${fileDetail.cv_jobid}&__format__=false`
+            url: `${config.urls.wildMeBase}/job/result/?jobid=${fileDetail.cv_jobid}&__format__=false`
             };
-            await models.tp_api_log.update({request_data:`${AppConstant.C.wildMeBaseUrl}/job/result/?jobid=${fileDetail.cv_jobid}&__format__=false`},{where : {id: tpData.id}})
+            await models.tp_api_log.update({request_data:`${config.urls.wildMeBase}/job/result/?jobid=${fileDetail.cv_jobid}&__format__=false`},{where : {id: tpData.id}})
             axios(config)
             .then(function (response) {
-                models.tp_api_log.update({response_data:JSON.stringify(response.data),response_time:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)},{where : {id: tpData.id}})
+                models.tp_api_log.update({response_data:JSON.stringify(response.data),response_time:moment().format(constants.DATE_FORMAT.DB)},{where : {id: tpData.id}})
                 if(response && response.data.response && response.data.status && response.data.status.code && response.data.status.code != 200){
-                    emailHelper.sendEmail({to:AppConstant.C.defaultAppAlert,subject:'CV result API invalid Response',html:JSON.stringify(response.data)});
+                    emailHelper.sendEmail({to:config.email.defaultRecipients,subject:'CV result API invalid Response',html:JSON.stringify(response.data)});
                 }
                 resolve(response.data);
             })
             .catch(function (error) {
-                models.tp_api_log.update({response_data:JSON.stringify(error),response_time:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)},{where : {id: tpData.id}})
-                emailHelper.sendEmail({to:AppConstant.C.defaultAppAlert,subject:'CV result API down',html:JSON.stringify(error)});
+                models.tp_api_log.update({response_data:JSON.stringify(error),response_time:moment().format(constants.DATE_FORMAT.DB)},{where : {id: tpData.id}})
+                emailHelper.sendEmail({to:config.email.defaultRecipients,subject:'CV result API down',html:JSON.stringify(error)});
                 reject(error);
             });
 
         } catch (error) {
-            models.tp_api_log.update({response_data:JSON.stringify(error),response_time:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)},{where : {id: tpData.id}})
-            emailHelper.sendEmail({to:AppConstant.C.defaultAppAlert,subject:'CV result API down',html:JSON.stringify(error)});
+            models.tp_api_log.update({response_data:JSON.stringify(error),response_time:moment().format(constants.DATE_FORMAT.DB)},{where : {id: tpData.id}})
+            emailHelper.sendEmail({to:config.email.defaultRecipients,subject:'CV result API down',html:JSON.stringify(error)});
             reject(error);
-        } 
+        }
     });
 }
 
@@ -186,7 +187,7 @@ ObservationService.saveObservation = (req,fileDetail) => {
             resolve(data);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 ObservationService.updateObservationTaxon = (req,fileDetail) => {
@@ -194,7 +195,7 @@ ObservationService.updateObservationTaxon = (req,fileDetail) => {
     return new Promise( async (resolve,reject)=>{
         try {
             let updateObj = {};
-            updateObj.updated_at=moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
+            updateObj.updated_at=moment().format(constants.DATE_FORMAT.DB);
             if(fileDetail.cv_result){
                 updateObj.cv_result = fileDetail.cv_result;
             }
@@ -233,7 +234,7 @@ ObservationService.updateObservationTaxon = (req,fileDetail) => {
                         return resolve({});
                     }
                 });
-              
+
               }).then(function (result) {
                   resolve(result);
                 // Transaction has been committed
@@ -244,7 +245,7 @@ ObservationService.updateObservationTaxon = (req,fileDetail) => {
                 // err is whatever rejected the promise chain returned to the transaction callback
               });
         } catch (error) {
-            reject(error);           
+            reject(error);
         }
     });
 }
@@ -256,7 +257,7 @@ ObservationService.getObservation = (context,req) => {
             if(queryFilter.where.request_id){
                 const data = await models.observation.findOne(queryFilter);
                 if(!data){
-                    const result = utils.successFormater(200,{},AppConstant.EC.NO_RECORD_FOUND);
+                    const result = utils.successFormater(200,{},constants.MESSAGES.NO_RECORD_FOUND);
                     utils.sendResponse(context,req,200,result);
                 } else{
                     const modifiedResults = utils.modifiedResult(req,data);
@@ -267,15 +268,15 @@ ObservationService.getObservation = (context,req) => {
                 const modifiedResults = utils.modifiedResult(req, results);
                 if(count>0 && reqQuery.isDownload && reqQuery.type === 'csv'){
                     const uploadFileDetail = await ObservationService.downloadDataAsCSV(context,req,modifiedResults);
-                    const result = utils.successFormater(200,uploadFileDetail,AppConstant.EC.FILE_CREATED_SUCCESSFULLY);
+                    const result = utils.successFormater(200,uploadFileDetail,constants.MESSAGES.FILE_CREATED_SUCCESSFULLY);
                     utils.sendResponse(context,req,200,result);
                 } else {
                     resolve({data:modifiedResults,dataCount:count});
                 }
-            }                        
+            }
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 
@@ -315,7 +316,7 @@ ObservationService.prepareQueryFilter = (context,req) => {
                 }
             } else if(!utils.isEmpty(reqQuery.startDate) && !utils.isEmpty(reqQuery.endDate)) {
                 queryFilter.where.created_at = {[Op.between] : [utils.convertToUTC(req,`${reqQuery.startDate} 00:00:00`) , utils.convertToUTC(req,`${reqQuery.endDate} 23:59:59`) ]};
-            }            
+            }
             queryFilter.where = searchString ? {...queryFilter.where,
                 [Op.or]: [
                     (moment(new Date(searchString)).isValid())?{ created_at: {[Op.gte]: utils.convertToUTC(req,`${searchString} 00:00:00`),[Op.lte]: utils.convertToUTC(req,`${searchString} 23:59:59`)} }:{},
@@ -324,7 +325,7 @@ ObservationService.prepareQueryFilter = (context,req) => {
                     { '$userDetail.full_name$': {[Op.like]: `%${searchString}%`} }
                 ]
                 } : {...queryFilter.where};
-                //[models.sequelize.fn('date_format', models.sequelize.col('observation.created_at'), AppConstant.C.dateFormat.defaultDateFormat), 'created_at']
+                //[models.sequelize.fn('date_format', models.sequelize.col('observation.created_at'), constants.DATE_FORMAT.DEFAULT), 'created_at']
             queryFilter.attributes = ['id','request_id',['display_file_name','file_name'],['storage_file_url','file_url'],'cv_status',[models.Sequelize.literal(`CASE cv_status WHEN 1 THEN 'Completed' ELSE 'Pending' END`), 'cv_status_name'],'created_at','location']
             queryFilter.include=[
                 /* {
@@ -363,7 +364,7 @@ ObservationService.prepareQueryFilter = (context,req) => {
             //queryFilter.subQuery = false;
             if(!reqQuery.isDownload){
                 const page = reqQuery.page?parseInt(reqQuery.page):1;
-                const limit = reqQuery.limit?parseInt(reqQuery.limit):AppConstant.C.defaultLimit;
+                const limit = reqQuery.limit?parseInt(reqQuery.limit):constants.DEFAULTS.LIMIT;
                 const offset = (page - 1) * limit;
                 queryFilter.offset = offset;
                 queryFilter.limit = limit;
@@ -371,7 +372,7 @@ ObservationService.prepareQueryFilter = (context,req) => {
             resolve(queryFilter);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 ObservationService.fetchAndUpdateObservationResult = (context,req,observationObj) => {
@@ -387,15 +388,15 @@ ObservationService.fetchAndUpdateObservationResult = (context,req,observationObj
                 fileDetail.cv_result = jobIdResult.response.json_result;
             }
             fileDetail.retry_attempted = observationObj?Number(observationObj.retry_attempted)+1:0;
-            ObservationService.updateObservationTaxon(req,fileDetail).catch(e=>console.log(" fetchAndUpdateObservationResult updateObservationTaxon error ============",e));           
+            ObservationService.updateObservationTaxon(req,fileDetail).catch(e=>console.log(" fetchAndUpdateObservationResult updateObservationTaxon error ============",e));
             resolve(fileDetail);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 
-ObservationService.observationCron = (context,jobId='') => { // use jobId for CV callback handler 
+ObservationService.observationCron = (context,jobId='') => { // use jobId for CV callback handler
     return new Promise( async (resolve,reject)=>{
         try {
             const req = {};
@@ -403,7 +404,7 @@ ObservationService.observationCron = (context,jobId='') => { // use jobId for CV
             const obj={
                 query:timeStamp,
             }
-            
+
             const ddata = await ObservationService.saveObservation(req,{cv_result:obj}); */
             const where={cv_status:0,user_id:{[Op.gt]: 0},retry_attempted:{[Op.lte]: 10}};
             if(!utils.isEmpty(jobId)){
@@ -417,7 +418,7 @@ ObservationService.observationCron = (context,jobId='') => { // use jobId for CV
         } catch (error) {
             console.log("Error in observationCron service =======",error);
             reject(`Error in observationCron service`);
-        } 
+        }
     });
 }
 ObservationService.downloadDataAsCSV = (context,req,rows) => {
@@ -436,7 +437,7 @@ ObservationService.downloadDataAsCSV = (context,req,rows) => {
                         "Family": obj.taxonDetail && obj.taxonDetail.length && obj.taxonDetail[0].family?obj.taxonDetail[0].family:'',
                         "Scientific Name": obj.taxonDetail && obj.taxonDetail.length && obj.taxonDetail[0].scientific_name?obj.taxonDetail[0].scientific_name:'',
                         "Common Name English": obj.taxonDetail && obj.taxonDetail.length && obj.taxonDetail[0].common_name_english?obj.taxonDetail[0].common_name_english:'',
-                        "Other Common Names English": obj.taxonDetail && obj.taxonDetail.length && obj.taxonDetail[0].other_common_names_english?obj.taxonDetail[0].other_common_names_english:'',                        
+                        "Other Common Names English": obj.taxonDetail && obj.taxonDetail.length && obj.taxonDetail[0].other_common_names_english?obj.taxonDetail[0].other_common_names_english:'',
                         "IUCN Assessment": obj.taxonDetail && obj.taxonDetail.length && obj.taxonDetail[0].iucn_assessment?obj.taxonDetail[0].iucn_assessment:'',
                         "CITES Status": obj.taxonDetail && obj.taxonDetail.length && obj.taxonDetail[0].cites_status?obj.taxonDetail[0].cites_status:'',
                         "Geographical Distribution": obj.taxonDetail && obj.taxonDetail.length && obj.taxonDetail[0].geographical_distribution?obj.taxonDetail[0].geographical_distribution:'',
@@ -451,13 +452,13 @@ ObservationService.downloadDataAsCSV = (context,req,rows) => {
                     fileName:`Observation_${Date.now()}.csv`,
                     fileContent:csv
                 }
-                /* let writer = fs.createWriteStream(`Training_${Date.now()}.csv`); 
+                /* let writer = fs.createWriteStream(`Training_${Date.now()}.csv`);
                 writer.write(csv); */
-                const fileDetail = await ObservationService.uploadTmpFiles(fileObj);   
-                resolve(fileDetail);                   
+                const fileDetail = await ObservationService.uploadTmpFiles(fileObj);
+                resolve(fileDetail);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 ObservationService.uploadTmpFiles = (imageObj) => {
@@ -465,7 +466,7 @@ ObservationService.uploadTmpFiles = (imageObj) => {
         try {
             const imageDetail = {};
             // Create the BlobServiceClient object which will be used to create a container client
-            const blobServiceClient = BlobServiceClient.fromConnectionString(AppConstant.C.blobConnectionString);
+            const blobServiceClient = BlobServiceClient.fromConnectionString(config.blob.connectionString);
             // Get a reference to a container
             const containerClient = blobServiceClient.getContainerClient('tmp-files');
             const blobName = imageObj.fileName;
@@ -478,15 +479,15 @@ ObservationService.uploadTmpFiles = (imageObj) => {
             resolve(imageDetail);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 ObservationService.prepareReportData = (req,params={}) => {
     const reqBody = req.body;
     params.user_id = (req.userDetail && req.userDetail.userId)?req.userDetail.userId:0;
     params.observation_id = reqBody.observationId?reqBody.observationId:'';
-    params.created_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
-    params.updated_at=moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
+    params.created_at = moment().format(constants.DATE_FORMAT.DB);
+    params.updated_at=moment().format(constants.DATE_FORMAT.DB);
     return params;
 }
 ObservationService.observationReport = (req,obj) =>  {
@@ -497,7 +498,7 @@ ObservationService.observationReport = (req,obj) =>  {
             resolve(modifiedResults);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 ObservationService.getObservationReport = (context,req) => {
@@ -508,7 +509,7 @@ ObservationService.getObservationReport = (context,req) => {
             if(queryFilter.where.id){
                 const data = await models.observation_report.findOne(queryFilter);
                 if(!data){
-                    const result = utils.successFormater(200,{},AppConstant.EC.NO_RECORD_FOUND);
+                    const result = utils.successFormater(200,{},constants.MESSAGES.NO_RECORD_FOUND);
                     utils.sendResponse(context,req,200,result);
                 } else{
                     const modifiedResults = utils.modifiedResult(req,data);
@@ -519,15 +520,15 @@ ObservationService.getObservationReport = (context,req) => {
                 const modifiedResults = utils.modifiedResult(req, results);
                 if(count>0 && reqQuery.isDownload && reqQuery.type === 'csv'){
                     /* const uploadFileDetail = await ObservationService.downloadDataAsCSV(context,req,modifiedResults);
-                    const result = utils.successFormater(200,uploadFileDetail,AppConstant.EC.FILE_CREATED_SUCCESSFULLY);
+                    const result = utils.successFormater(200,uploadFileDetail,constants.MESSAGES.FILE_CREATED_SUCCESSFULLY);
                     utils.sendResponse(context,req,200,result); */
                 } else {
                     resolve({data:modifiedResults,dataCount:count});
                 }
-            }                        
+            }
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 
@@ -558,7 +559,7 @@ ObservationService.prepareReportQueryFilter = (context,req) => {
             }
             if(!utils.isEmpty(reqQuery.userId)){
                 queryFilter.where.user_id = reqQuery.userId;
-            }       
+            }
             queryFilter.where = searchString ? {...queryFilter.where,
                 [Op.or]: [
                     (moment(new Date(searchString)).isValid())?{ created_at: {[Op.gte]: utils.convertToUTC(req,`${searchString} 00:00:00`),[Op.lte]: utils.convertToUTC(req,`${searchString} 23:59:59`)} }:{},
@@ -566,7 +567,7 @@ ObservationService.prepareReportQueryFilter = (context,req) => {
                     { '$reportUserDetail.last_name$': {[Op.like]: `%${searchString}%`} }
                 ]
                 } : {...queryFilter.where};
-                //[models.sequelize.fn('date_format', models.sequelize.col('observation.created_at'), AppConstant.C.dateFormat.defaultDateFormat), 'created_at']
+                //[models.sequelize.fn('date_format', models.sequelize.col('observation.created_at'), constants.DATE_FORMAT.DEFAULT), 'created_at']
                 queryFilter.attributes = ['id','created_at']
             queryFilter.include=[
                 {
@@ -587,7 +588,7 @@ ObservationService.prepareReportQueryFilter = (context,req) => {
             queryFilter.subQuery = false;
             if(!reqQuery.isDownload){
                 const page = reqQuery.page?parseInt(reqQuery.page):1;
-                const limit = reqQuery.limit?parseInt(reqQuery.limit):AppConstant.C.defaultLimit;
+                const limit = reqQuery.limit?parseInt(reqQuery.limit):constants.DEFAULTS.LIMIT;
                 const offset = (page - 1) * limit;
                 queryFilter.offset = offset;
                 queryFilter.limit = limit;
@@ -595,7 +596,7 @@ ObservationService.prepareReportQueryFilter = (context,req) => {
             resolve(queryFilter);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 module.exports = ObservationService;

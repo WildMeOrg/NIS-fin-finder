@@ -8,8 +8,9 @@ const { Op } = require("sequelize");
 const fs = require('fs');
 const path = require('path');
 const { Parser } = require('json2csv');
-const AppConstant = require('../helper/appConstant');
+const constants = require('../config/constants');
 const { v4: uuidv4 } = require('uuid');
+const config = require("../config");
 
 class TrainingService{
     constructor(){
@@ -25,7 +26,7 @@ TrainingService.readFileContent = (imageObj) => {
             });
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 TrainingService.uploadImageUsingUrl = (imageObj) => {
@@ -33,7 +34,7 @@ TrainingService.uploadImageUsingUrl = (imageObj) => {
         try {
             const imageDetail = {};
             // Create the BlobServiceClient object which will be used to create a container client
-            const blobServiceClient = BlobServiceClient.fromConnectionString(AppConstant.C.blobConnectionString);
+            const blobServiceClient = BlobServiceClient.fromConnectionString(config.blob.connectionString);
             // Get a reference to a container
             const containerClient = blobServiceClient.getContainerClient('training-data');
             //let buff = imageObj.fileContent;
@@ -47,7 +48,7 @@ TrainingService.uploadImageUsingUrl = (imageObj) => {
             resolve(imageDetail);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 
@@ -58,7 +59,7 @@ TrainingService.updateDetail = (imageId,imageDetail) => {
             resolve(data);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 TrainingService.gettraining = (context,req) => {
@@ -69,7 +70,7 @@ TrainingService.gettraining = (context,req) => {
             if(queryFilter.where.request_id){
                 const data = await models.training.findOne(queryFilter);
                 if(!data){
-                    const result = utils.successFormater(200,{},AppConstant.EC.NO_RECORD_FOUND);
+                    const result = utils.successFormater(200,{},constants.MESSAGES.NO_RECORD_FOUND);
                     utils.sendResponse(context,req,200,result);
                 } else{
                     const modifiedResults = utils.modifiedResult(req, data);
@@ -80,15 +81,15 @@ TrainingService.gettraining = (context,req) => {
                 const modifiedResults = utils.modifiedResult(req, results);
                 if(count>0 && reqQuery.isDownload && reqQuery.type === 'csv'){
                     const uploadFileDetail = await TrainingService.downloadDataAsCSV(context,req,modifiedResults);
-                    const result = utils.successFormater(200,uploadFileDetail,AppConstant.EC.FILE_CREATED_SUCCESSFULLY);
+                    const result = utils.successFormater(200,uploadFileDetail,constants.MESSAGES.FILE_CREATED_SUCCESSFULLY);
                     utils.sendResponse(context,req,200,result);
                 } else {
                     resolve({data:modifiedResults,dataCount:count});
-                }                
-            }                        
+                }
+            }
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 
@@ -116,7 +117,7 @@ TrainingService.prepareQueryFilter = (context,req) => {
             } else if(orderBy && ['first_name','last_name'].includes(sort)){
                 queryFilter.order = [[{model:models.user,as:'userDetail'},`${sort}`, `${order}`]]
             } else {
-                queryFilter.order = orderBy?[[`${sort}`, `${order}`]]:[['id', AppConstant.C.defaultOrder]]
+                queryFilter.order = orderBy?[[`${sort}`, `${order}`]]:[['id', constants.DEFAULTS.ORDER]]
             }
             if(utils.isOrgAdmin(context,req) && !utils.isSuperAdmin(context,req)){
                 userWhere.organization_id = req.userDetail.organizationId; // loggedin user org ID
@@ -134,7 +135,7 @@ TrainingService.prepareQueryFilter = (context,req) => {
             }
             if(!utils.isEmpty(reqQuery.startDate) && !utils.isEmpty(reqQuery.endDate)) {
                 queryFilter.where.created_at = {[Op.between] : [utils.convertToUTC(req,`${reqQuery.startDate} 00:00:00`) , utils.convertToUTC(req,`${reqQuery.endDate} 23:59:59`) ]};
-            }  
+            }
             queryFilter.where = searchString ? {...queryFilter.where,
                 [Op.or]: [
                     (moment(new Date(searchString)).isValid())?{ created_at: {[Op.gte]: utils.convertToUTC(req,`${searchString} 00:00:00`),[Op.lte]: utils.convertToUTC(req,`${searchString} 23:59:59`)} }:{},
@@ -185,11 +186,11 @@ TrainingService.prepareQueryFilter = (context,req) => {
                     as:'taxonDetail',
                     attributes:['taxon_id','scientific_name','common_name_english','cites_status']
                 }
-                
+
             ];
             if(!reqQuery.isDownload){
                 const page = reqQuery.page?parseInt(reqQuery.page):1;
-                const limit = reqQuery.limit?parseInt(reqQuery.limit):AppConstant.C.defaultLimit;
+                const limit = reqQuery.limit?parseInt(reqQuery.limit):constants.DEFAULTS.LIMIT;
                 const offset = (page - 1) * limit;
                 queryFilter.offset = offset;
                 queryFilter.limit = limit;
@@ -197,7 +198,7 @@ TrainingService.prepareQueryFilter = (context,req) => {
             resolve(queryFilter);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 
@@ -210,7 +211,7 @@ TrainingService.uploadTraining = (req) => {
             const reqBody = req.body;
             const fileDetail = {};
             // Create the BlobServiceClient object which will be used to create a container client
-            const blobServiceClient = BlobServiceClient.fromConnectionString(AppConstant.C.blobConnectionString);
+            const blobServiceClient = BlobServiceClient.fromConnectionString(config.blob.connectionString);
             // Get a reference to a container
             //const containerClient = blobServiceClient.getContainerClient(containerName);
             const containerClient = blobServiceClient.getContainerClient('training-data');
@@ -231,7 +232,7 @@ TrainingService.uploadTraining = (req) => {
             resolve(fileDetail);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 
@@ -250,13 +251,13 @@ TrainingService.prepareSaveData = (req,fileDetail={}) => {
     fileDetail.remarks = reqBody.remarks?reqBody.remarks:'';
     if(!reqBody.requestId){
         fileDetail.date_of_image_taken = moment().format('YYYY-MM-DD');
-        fileDetail.created_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
-        fileDetail.updated_at=moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
+        fileDetail.created_at = moment().format(constants.DATE_FORMAT.DB);
+        fileDetail.updated_at=moment().format(constants.DATE_FORMAT.DB);
         fileDetail.request_from = req.requestFrom;
     }
     else{
-        fileDetail.updated_at=moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
-    }        
+        fileDetail.updated_at=moment().format(constants.DATE_FORMAT.DB);
+    }
     if(!utils.isEmpty(reqBody.latitude) && !utils.isEmpty(reqBody.longitude)){
         const point = { type: 'Point', coordinates: [reqBody.longitude, reqBody.latitude]}; // GeoJson format: [lng, lat]
         fileDetail.location = point;
@@ -270,7 +271,7 @@ TrainingService.saveTraining = (req,fileDetail) => {
             resolve(data);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 TrainingService.updateTraining = (requestId,fileDetail) => {
@@ -280,7 +281,7 @@ TrainingService.updateTraining = (requestId,fileDetail) => {
             resolve(data);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 TrainingService.downloadDataAsCSV = (context,req,rows) => {
@@ -314,13 +315,13 @@ TrainingService.downloadDataAsCSV = (context,req,rows) => {
                     fileName:`Training_${Date.now()}.csv`,
                     fileContent:csv
                 }
-                /* let writer = fs.createWriteStream(`Training_${Date.now()}.csv`); 
+                /* let writer = fs.createWriteStream(`Training_${Date.now()}.csv`);
                 writer.write(csv); */
-                const fileDetail = await TrainingService.uploadTmpFiles(fileObj);   
-                resolve(fileDetail);                   
+                const fileDetail = await TrainingService.uploadTmpFiles(fileObj);
+                resolve(fileDetail);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 TrainingService.uploadTmpFiles = (imageObj) => {
@@ -328,7 +329,7 @@ TrainingService.uploadTmpFiles = (imageObj) => {
         try {
             const imageDetail = {};
             // Create the BlobServiceClient object which will be used to create a container client
-            const blobServiceClient = BlobServiceClient.fromConnectionString(AppConstant.C.blobConnectionString);
+            const blobServiceClient = BlobServiceClient.fromConnectionString(config.blob.connectionString);
             // Get a reference to a container
             const containerClient = blobServiceClient.getContainerClient('tmp-files');
             const blobName = imageObj.fileName;
@@ -341,7 +342,7 @@ TrainingService.uploadTmpFiles = (imageObj) => {
             resolve(imageDetail);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 TrainingService.validateCSVData = (arrOfObj)=>{
@@ -375,10 +376,10 @@ TrainingService.validateCSVData = (arrOfObj)=>{
                             } else {
                                 arrOfObj[i].fin_view_id = finViewMatch.id;
                             }
-                        //}                        
+                        //}
                     }
                 //}
-                
+
                 //if(!utils.isEmpty(obj.geographic_location)){
                     const geoGraphicLocationMatch = geoGraphicLocationData.find(ele => ele.name.toLowerCase() == obj.geographic_location.toLowerCase());
                     if(!geoGraphicLocationMatch){
@@ -400,7 +401,7 @@ TrainingService.validateCSVData = (arrOfObj)=>{
                     } else {
                         arrOfObj[i].image_license_id = imageLicenseMatch.id;
                     }
-                //}                
+                //}
             }
             const errResult = {
                 validDataCnt:0,
@@ -409,9 +410,9 @@ TrainingService.validateCSVData = (arrOfObj)=>{
             };
             return resolve({error:errResult,jsonArray:arrOfObj});
         } catch (error) {
-            reject(error);           
+            reject(error);
         }
-    });    
+    });
 }
 TrainingService.saveTrainingTrans = (arrOfObj)=>{
     return new Promise( async (resolve,reject)=>{
@@ -449,8 +450,8 @@ TrainingService.saveTrainingTrans = (arrOfObj)=>{
             }
             resolve(result);
         } catch (error) {
-            reject(error);           
+            reject(error);
         }
-    });    
+    });
 }
 module.exports = TrainingService;
