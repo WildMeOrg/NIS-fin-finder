@@ -29,5 +29,6 @@ module.exports = {
             orgRegistration: process.env.TEMPLATE_ORG_REGISTRATION,
         },
         defaultRecipients: process.env.DEFAULT_ALERT_EMAILS?.split(',') || [],
+        contactEmail: process.env.CONTACT_EMAIL,
     }
 };

@@ -13,9 +13,9 @@ class EmailHelper {
 EmailHelper.sendEmail = function (emailObj) {
     try {
         const msg = {
-            to: emailObj.to ? emailObj.to : 'finfinder@wildme.org',
-            from: emailObj.from ? emailObj.from : 'finfinder@wildme.org',
-            subject: emailObj.subject ? emailObj.subject : 'Default Subject',
+            to: emailObj.to ? emailObj.to : config.email.contactEmail,
+            from: emailObj.from ? emailObj.from : config.email.contactEmail,
+            subject: emailObj.subject ? emailObj.subject : config.email.contactEmail,
             html: emailObj.html ? emailObj.html : '<h1>Testing!!!</h1>',
         };
         sgMail.send(msg);
@@ -30,10 +30,10 @@ EmailHelper.sendEmail = function (emailObj) {
 EmailHelper.sendTemplateEmail = function (emailObj) {
     try {
         const msg = {
-            from: "finfinder@wildme.org",
+            from: config.email.contactEmail,
             template_id: emailObj.templateId,
             personalizations: [{
-                to: emailObj.to ? emailObj.to : [{email: 'dmunasinghe@conservation.org'}],
+                to: emailObj.to ? emailObj.to : [{email: config.email.contactEmail}],
                 cc: emailObj.cc ? emailObj.cc : '',
                 dynamic_template_data: emailObj.dynamicTemplateData,
             }],

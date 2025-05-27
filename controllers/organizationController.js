@@ -138,7 +138,7 @@ OrganizationController.orgRegistration = async (context, req) => {
                 orgName:reqBody.org_name,
                 orgEmail:reqBody.org_email,
                 orgUrl:reqBody.org_url,
-                feedbackURL:'finfinder@wildme.org',
+                feedbackURL:config.email.contactEmail,
             }
         });
         const resultFormat = utils.successFormater(200,{},constants.MESSAGES.EMAIL_SEND_SUCCESSFULLY);

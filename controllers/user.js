@@ -68,7 +68,7 @@ UserController.createUser = async (context, req) => {
                     fullname:userDetail.full_name,
                     setPasswordURL:`${config.urls.webApp}/setpassword/${userDetail.token}`,
                     domainURL:config.urls.webApp,
-                    feedbackURL:'finfinder@wildme.org',
+                    feedbackURL:config.email.contactEmail,
                 }
             });
         }
@@ -223,7 +223,7 @@ UserController.setPassword = async (context,req) => {
                         dynamicTemplateData:{
                             fullname:userResult.full_name,
                             dateTime:moment().format(constants.DATE_FORMAT.MOMENT_DATE_TIME),
-                            feedbackURL:'finfinder@wildme.org',
+                            feedbackURL:config.email.contactEmail,
                         }
                     });
                 } else {
@@ -234,7 +234,7 @@ UserController.setPassword = async (context,req) => {
                             fullname:userResult.full_name,
                             domainURL:config.urls.webApp,
                             finFinderUrl:config.urls.finFinder,
-                            feedbackURL:'finfinder@wildme.org',
+                            feedbackURL:config.email.contactEmail,
                         }
                     });
                 }
@@ -409,7 +409,7 @@ UserController.sendForgotPasswordEmail = async(context,req) => {
                     dynamicTemplateData:{
                         fullname:result.full_name,
                         setPasswordURL:`${config.urls.webApp}/setpassword/${token}/1`,
-                        feedbackURL:'finfinder@wildme.org',
+                        feedbackURL:config.email.contactEmail,
                     }
                 });
             }
