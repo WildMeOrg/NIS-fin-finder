@@ -45,5 +45,10 @@ Note: "AzureWebJobsStorage" should be set to "UseDevelopmentStorage=true" so it 
 
 * Start the functions at the project root:
 
+    `npm start`
+
+    or
+
     `func start --verbose`
 
+    for more logging output.  
