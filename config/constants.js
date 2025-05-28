@@ -13,8 +13,7 @@ module.exports = {
     },
     DEFAULTS: {
         LIMIT: 10,
-        ORDER: 'DESC',
-        USER_PASSWORD: 'nis@1234'  // Consider moving this to a secret if dynamic
+        ORDER: 'DESC'
     },
     MESSAGES: {
         INVALID_CREDENTIAL: 'Invalid Credential',

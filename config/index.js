@@ -30,5 +30,8 @@ module.exports = {
         },
         defaultRecipients: process.env.DEFAULT_ALERT_EMAILS?.split(',') || [],
         contactEmail: process.env.CONTACT_EMAIL,
+    },
+    user: {
+        defaultPassword: process.env.DEFAULT_PASSWORD,
     }
 };

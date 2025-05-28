@@ -295,7 +295,7 @@ UserController.addUserAndRoles = (context, req)=>{
                     postal_code: req.body.postal_code,
                     //remarks: req.body.remarks,
                     email: req.body.email,
-                    password: constants.DEFAULTS.USER_PASSWORD,
+                    password: config.user.defaultPassword,
                     //use_common_names: req.body.use_common_names,
                     //logged: req.body.logged,
                     organization_id: req.body.organization_id,
