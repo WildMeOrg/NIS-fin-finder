@@ -1,12 +1,11 @@
-const utils= require('../utils.js');
-const AppConstant = require('../helper/appConstant');
+const utils = require('../utils.js');
+const constants = require('../config/constants');
 
 class ValidationHelper {
     constructor() {
 
     }
 }
-
 
 ValidationHelper.joiValidate = function (schema, params) {
     try {
@@ -25,7 +24,7 @@ ValidationHelper.joiValidate = function (schema, params) {
         }
         return Promise.resolve(result);
     } catch (e) {
-        return Promise.reject(AppConstant.EC.INVALID_VALIDATION_SCHEMA);
+        return Promise.reject(constants.MESSAGES.INVALID_VALIDATION_SCHEMA);
     }
 }
 

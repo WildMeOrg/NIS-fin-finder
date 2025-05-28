@@ -2,7 +2,7 @@ const models = require('../models');
 const moment = require('moment');
 const utils = require('../utils.js');
 const { Op } = require("sequelize");
-const AppConstant = require('../helper/appConstant');
+const constants = require('../config/constants');
 
 class OrganizationService{
     constructor(){
@@ -17,7 +17,7 @@ OrganizationService.getOrganizations = (context,req) => {
             if(queryFilter.where.id){
                 const data = await models.organizations.findOne(queryFilter);
                 if(!data){
-                    const result = utils.successFormater(200,{},AppConstant.EC.NO_RECORD_FOUND);
+                    const result = utils.successFormater(200,{},constants.MESSAGES.NO_RECORD_FOUND);
                     utils.sendResponse(context,req,200,result);
                 } else{
                     const modifiedResults = utils.modifiedResult(req, data);
@@ -27,10 +27,10 @@ OrganizationService.getOrganizations = (context,req) => {
                 const { count, rows:results } = await models.organizations.findAndCountAll(queryFilter);
                 const modifiedResults = utils.modifiedResult(req, results);
                 resolve({data:modifiedResults,dataCount:count});
-            }                        
+            }
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 
@@ -47,7 +47,7 @@ OrganizationService.prepareQueryFilter = (context,req) => {
             if(orderBy && ['country_name'].includes(sort)){
                 queryFilter.order = [[{model:models.geographic_location,as:'countryDetail'},'name', `${order}`]]
             } else {
-                queryFilter.order = orderBy?[[`${sort}`, `${order}`]]:[['id', AppConstant.C.defaultOrder]]
+                queryFilter.order = orderBy?[[`${sort}`, `${order}`]]:[['id', constants.DEFAULTS.ORDER]]
             }
             if(utils.isOrgAdmin(context,req)){
                 queryFilter.where.id = req.userDetail.organizationId;
@@ -66,7 +66,7 @@ OrganizationService.prepareQueryFilter = (context,req) => {
                     { postal_code: {[Op.like]: `%${searchString}%`} }
                 ]
                 } : {...queryFilter.where};
-            
+
             queryFilter.attributes = ['id','first_name','last_name','name','street_address','city','state','postal_code','phone','email','country_code','organization_url','active','status','created_at']
             queryFilter.include=[
                 {
@@ -77,14 +77,14 @@ OrganizationService.prepareQueryFilter = (context,req) => {
             ];
             queryFilter.distinct = true;
             const page = reqQuery.page?parseInt(reqQuery.page):1;
-            const limit = reqQuery.limit?parseInt(reqQuery.limit):AppConstant.C.defaultLimit;
+            const limit = reqQuery.limit?parseInt(reqQuery.limit):constants.DEFAULTS.LIMIT;
             const offset = (page - 1) * limit;
             queryFilter.offset = offset;
             queryFilter.limit = limit;
             resolve(queryFilter);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 OrganizationService.prepareSaveData = (context,req) => {
@@ -105,10 +105,10 @@ OrganizationService.prepareSaveData = (context,req) => {
     preparedData.remarks = reqBody.remarks;
     preparedData.active = reqBody.active;
     if(reqBody.id){
-        preparedData.updated_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
+        preparedData.updated_at = moment().format(constants.DATE_FORMAT.DB);
     } else {
-        preparedData.created_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
-        preparedData.updated_at = moment().format(AppConstant.C.dateFormat.DBDateTimeFormat);
+        preparedData.created_at = moment().format(constants.DATE_FORMAT.DB);
+        preparedData.updated_at = moment().format(constants.DATE_FORMAT.DB);
         preparedData.request_from = req.requestFrom;
     }
     return preparedData;
@@ -121,7 +121,7 @@ OrganizationService.saveData = (context,req,preparedData) => {
         } catch (error) {
 
             reject(error);
-        } 
+        }
     });
 }
 OrganizationService.updateData = (context,req,orgId,preparedData) => {
@@ -131,7 +131,7 @@ OrganizationService.updateData = (context,req,orgId,preparedData) => {
             resolve(data);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 OrganizationService.updateUserData = (context,req,reqBody) => {
@@ -148,7 +148,7 @@ OrganizationService.updateUserData = (context,req,reqBody) => {
             resolve(update);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 OrganizationService.deleteOrganiztion = (context,req,reqQuery) => {
@@ -164,7 +164,7 @@ OrganizationService.deleteOrganiztion = (context,req,reqQuery) => {
             );
             const update = await models.user.update({
                 active:0,
-                updated_at:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)
+                updated_at:moment().format(constants.DATE_FORMAT.DB)
             },{
                 where : {
                     organization_id:reqQuery.id,
@@ -174,7 +174,7 @@ OrganizationService.deleteOrganiztion = (context,req,reqQuery) => {
             resolve(deleted);
         } catch (error) {
             reject(error);
-        } 
+        }
     });
 }
 module.exports = OrganizationService;

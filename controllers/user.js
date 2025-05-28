@@ -2,7 +2,8 @@ var models = require('../models');
 var utils= require('../utils.js');
 var jwt = require('jsonwebtoken');
 const { Op } = require("sequelize");
-const AppConstant = require('../helper/appConstant');
+const config = require('../config');
+const constants = require('../config/constants');
 const userServiceObj = require('../services/userService.js');
 const userValidator = require('../validators/userValidator.js');
 const validationHelper 	= require('../helper/validationHelper.js');
@@ -12,7 +13,7 @@ const { v4: uuidv4 } = require('uuid');
 
 class UserController{
     constructor(){
-        
+
     }
 }
 
@@ -45,40 +46,40 @@ UserController.createUser = async (context, req) => {
         if (errors.length) {
             return utils.sendResponse(context,req,400,utils.errorFormater(400,errors));
         }
-        const result = await models.user.findOne({where : {[Op.or]:[{ phone:reqBody.phone }, { email: reqBody.email }]}});   
+        const result = await models.user.findOne({where : {[Op.or]:[{ phone:reqBody.phone }, { email: reqBody.email }]}});
         if(result && result.phone == reqBody.phone){
-            errArr.push(utils.errorObject('UC009',AppConstant.EC.PHONE_EXIST,AppConstant.EC.PHONE_EXIST));
+            errArr.push(utils.errorObject('UC009',constants.MESSAGES.PHONE_EXIST,constants.MESSAGES.PHONE_EXIST));
         }
         if(result && result.email == reqBody.email){
-            errArr.push(utils.errorObject('UC010',AppConstant.EC.EMAIL_EXIST,AppConstant.EC.EMAIL_EXIST));
+            errArr.push(utils.errorObject('UC010',constants.MESSAGES.EMAIL_EXIST,constants.MESSAGES.EMAIL_EXIST));
         }
         if(!utils.isEmpty(errArr)){
             let finalErr = utils.errorFormater(400,errArr);
             return utils.sendResponse(context,req,400,finalErr);
         }
-        
+
         const userResult = await UserController.addUserAndRoles(context, req);
         if(userResult){
             const userDetail = await models.user.findOne({where : {email: reqBody.email }});
             emailHelper.sendTemplateEmail({
                 to:[{email:userDetail.email}],
-                templateId:AppConstant.C.emailTemplateID.accountCreated,
+                templateId:config.email.template.accountCreated,
                 dynamicTemplateData:{
                     fullname:userDetail.full_name,
-                    setPasswordURL:`${AppConstant.C.webAppUrl}/setpassword/${userDetail.token}`,
-                    domainURL:AppConstant.C.webAppUrl,
-                    feedbackURL:'finfinder@wildme.org',
+                    setPasswordURL:`${config.urls.webApp}/setpassword/${userDetail.token}`,
+                    domainURL:config.urls.webApp,
+                    feedbackURL:config.email.contactEmail,
                 }
             });
         }
-        
-        const resultFormat = utils.successFormater(200,{},AppConstant.EC.RECORD_CREATE_SUCCESSFULLY);
-        utils.sendResponse(context,req,200,resultFormat);  
-          
+
+        const resultFormat = utils.successFormater(200,{},constants.MESSAGES.RECORD_CREATE_SUCCESSFULLY);
+        utils.sendResponse(context,req,200,resultFormat);
+
     }catch(err){
-        utils.sendResponse(context,req,500,false,err);        
+        utils.sendResponse(context,req,500,false,err);
     }
-       
+
 }
 
 UserController.userLogin = async (context,req) => {
@@ -92,21 +93,21 @@ UserController.userLogin = async (context,req) => {
             const userName = reqBody.userName;
             const [results, metadata] = await models.sequelize.query(`select * from user where BINARY email = '${userName}' and BINARY password = '${reqBody.password}'`);
             if(utils.isEmpty(results)){
-                errArr.push(utils.errorObject('UC001',AppConstant.EC.INVALID_CREDENTIAL,AppConstant.EC.INVALID_CREDENTIAL));
+                errArr.push(utils.errorObject('UC001',constants.MESSAGES.INVALID_CREDENTIAL,constants.MESSAGES.INVALID_CREDENTIAL));
             } else if(!utils.isEmpty(results) && results[0].active != 1) {
-                errArr.push(utils.errorObject('UC002',AppConstant.EC.INACTIVE_USER,AppConstant.EC.INACTIVE_USER));
+                errArr.push(utils.errorObject('UC002',constants.MESSAGES.INACTIVE_USER,constants.MESSAGES.INACTIVE_USER));
             }
             if(!utils.isEmpty(errArr)){
                 let finalErr = utils.errorFormater(400,errArr);
                 utils.sendResponse(context,req,400,finalErr);
             }
 
-            const userResult = await models.user.findOne({ 
-                where: { 
+            const userResult = await models.user.findOne({
+                where: {
                     email: userName,
                     password: reqBody.password
                 },
-                attributes:['id', 'first_name', 'last_name', 'full_name', 'email', 'active'], 
+                attributes:['id', 'first_name', 'last_name', 'full_name', 'email', 'active'],
                 include:[
                     {
                         model:models.roles,
@@ -123,10 +124,10 @@ UserController.userLogin = async (context,req) => {
                     }
                 ] });
             var token = jwt.sign(
-                { 
-                    userName: userName, 
-                    roles: userResult.rolesDetail, 
-                }, AppConstant.C.JWTTokenSecret);
+                {
+                    userName: userName,
+                    roles: userResult.rolesDetail,
+                }, config.jwt.secret);
             const data = [{
                 id: userResult.id,
                 userName: userResult.email,
@@ -139,7 +140,7 @@ UserController.userLogin = async (context,req) => {
                 body:  {
                     statusCode:200,
                     data,
-                    message:AppConstant.EC.VALID_USER,
+                    message:constants.MESSAGES.VALID_USER,
                     token,
                 },
                 headers: {
@@ -151,12 +152,12 @@ UserController.userLogin = async (context,req) => {
                 userData,
                 token,
             };
-            const result = utils.successFormater(200,finalData,AppConstant.EC.VALID_USER);
+            const result = utils.successFormater(200,finalData,constants.MESSAGES.VALID_USER);
             utils.sendResponse(context,req,200,result); */
-    
+
         } catch (error) {
             utils.sendResponse(context,req,400,false,error);
-        }    
+        }
 
 }
 
@@ -171,21 +172,21 @@ UserController.checkPassToken = async (context,req) => {
         const token = reqQuery.token;
         const userResult = await models.user.findOne({ where: { token: token} });
         if(!userResult){
-            errArr.push(utils.errorObject('UC003',AppConstant.EC.NO_RECORD_FOUND,AppConstant.EC.NO_RECORD_FOUND));
+            errArr.push(utils.errorObject('UC003',constants.MESSAGES.NO_RECORD_FOUND,constants.MESSAGES.NO_RECORD_FOUND));
         } else if(userResult && userResult.is_set_password == 1) {
-            errArr.push(utils.errorObject('UC004',AppConstant.EC.PASSWORD_HAS_SET_ALREADY,AppConstant.EC.PASSWORD_HAS_SET_ALREADY));
+            errArr.push(utils.errorObject('UC004',constants.MESSAGES.PASSWORD_HAS_SET_ALREADY,constants.MESSAGES.PASSWORD_HAS_SET_ALREADY));
         }
         if(!utils.isEmpty(errArr)){
             let finalErr = utils.errorFormater(400,errArr);
             utils.sendResponse(context,req,400,finalErr);
         } else {
-            const result = utils.successFormater(200,{},AppConstant.EC.VALID_PASS_TOKEN);
+            const result = utils.successFormater(200,{},constants.MESSAGES.VALID_PASS_TOKEN);
             utils.sendResponse(context,req,200,result);
-        }  
+        }
 
     } catch (error) {
         utils.sendResponse(context,req,400,false,error);
-    }    
+    }
 
 }
 
@@ -199,9 +200,9 @@ UserController.setPassword = async (context,req) => {
         }
         const userResult = await models.user.findOne({ where: { token: reqBody.token} });
         if(!userResult){
-            errArr.push(utils.errorObject('UC005',AppConstant.EC.NO_RECORD_FOUND,AppConstant.EC.NO_RECORD_FOUND));
+            errArr.push(utils.errorObject('UC005',constants.MESSAGES.NO_RECORD_FOUND,constants.MESSAGES.NO_RECORD_FOUND));
         } else if(userResult && userResult.is_set_password == 1) {
-            errArr.push(utils.errorObject('UC006',AppConstant.EC.PASSWORD_HAS_SET_ALREADY,AppConstant.EC.PASSWORD_HAS_SET_ALREADY));
+            errArr.push(utils.errorObject('UC006',constants.MESSAGES.PASSWORD_HAS_SET_ALREADY,constants.MESSAGES.PASSWORD_HAS_SET_ALREADY));
         }
         if(!utils.isEmpty(errArr)){
             let finalErr = utils.errorFormater(400,errArr);
@@ -218,33 +219,33 @@ UserController.setPassword = async (context,req) => {
                 if(reqBody.isFP){
                     emailHelper.sendTemplateEmail({
                         to:[{email:userResult.email}],
-                        templateId:AppConstant.C.emailTemplateID.forgotPasswordConfirmation,
+                        templateId:config.email.template.forgotPasswordConfirmation,
                         dynamicTemplateData:{
                             fullname:userResult.full_name,
-                            dateTime:moment().format(AppConstant.C.dateFormat.momentDateTimeFormat),
-                            feedbackURL:'finfinder@wildme.org',
+                            dateTime:moment().format(constants.DATE_FORMAT.MOMENT_DATE_TIME),
+                            feedbackURL:config.email.contactEmail,
                         }
                     });
                 } else {
                     emailHelper.sendTemplateEmail({
                         to:[{email:userResult.email}],
-                        templateId:AppConstant.C.emailTemplateID.accountActivated,
+                        templateId:config.email.template.accountActivated,
                         dynamicTemplateData:{
                             fullname:userResult.full_name,
-                            domainURL:AppConstant.C.webAppUrl,
-                            finFinderUrl:AppConstant.C.finFinderUrl,
-                            feedbackURL:'finfinder@wildme.org',
+                            domainURL:config.urls.webApp,
+                            finFinderUrl:config.urls.finFinder,
+                            feedbackURL:config.email.contactEmail,
                         }
                     });
                 }
-                const result = utils.successFormater(200,{},`Your account has been created, Please <a href="${AppConstant.C.webAppUrl}">Click Here<a/> to login.`);
+                const result = utils.successFormater(200,{},`Your account has been created, Please <a href="${config.urls.webApp}">Click Here<a/> to login.`);
                 utils.sendResponse(context,req,200,result);
-            }            
-        }  
+            }
+        }
 
     } catch (error) {
         utils.sendResponse(context,req,400,false,error);
-    }    
+    }
 
 }
 
@@ -258,23 +259,23 @@ UserController.updateUser = async (context, req) => {
         }
         const result = await models.user.findOne({where : {[Op.or]:[{ phone:req.body.phone }, { email: req.body.email }],id:{[Op.ne]: req.body.id}}});
         if(result && result.phone == req.body.phone){
-            errArr.push(utils.errorObject('UC007',AppConstant.EC.PHONE_EXIST,AppConstant.EC.PHONE_EXIST));
+            errArr.push(utils.errorObject('UC007',constants.MESSAGES.PHONE_EXIST,constants.MESSAGES.PHONE_EXIST));
         }
         if(result && result.email == req.body.email){
-            errArr.push(utils.errorObject('UC008',AppConstant.EC.EMAIL_EXIST,AppConstant.EC.EMAIL_EXIST));
+            errArr.push(utils.errorObject('UC008',constants.MESSAGES.EMAIL_EXIST,constants.MESSAGES.EMAIL_EXIST));
         }
         if(!utils.isEmpty(errArr)){
             let finalErr = utils.errorFormater(400,errArr);
             return utils.sendResponse(context,req,400,finalErr);
         }
-        await UserController.updateUserAndRoles(context, req);   
-        const resultFormat = utils.successFormater(200,{},AppConstant.EC.RECORD_UPDATED_SUCCESSFULLY);
-        utils.sendResponse(context,req,200,resultFormat);   
-          
+        await UserController.updateUserAndRoles(context, req);
+        const resultFormat = utils.successFormater(200,{},constants.MESSAGES.RECORD_UPDATED_SUCCESSFULLY);
+        utils.sendResponse(context,req,200,resultFormat);
+
     }catch(err){
-        utils.sendResponse(context,req,500,false,err);        
+        utils.sendResponse(context,req,500,false,err);
     }
-       
+
 }
 UserController.addUserAndRoles = (context, req)=>{
     return new Promise( async (resolve,reject)=>{
@@ -294,20 +295,20 @@ UserController.addUserAndRoles = (context, req)=>{
                     postal_code: req.body.postal_code,
                     //remarks: req.body.remarks,
                     email: req.body.email,
-                    password: AppConstant.C.defaultUserPassword,
+                    password: config.user.defaultPassword,
                     //use_common_names: req.body.use_common_names,
-                    //logged: req.body.logged,           
+                    //logged: req.body.logged,
                     organization_id: req.body.organization_id,
                     active: req.body.active,
                     added_by: req.userDetail.userId,
                     country_id: req.body.country_id?req.body.country_id:null,
-                    created_at:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat),
-                    updated_at:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)
+                    created_at:moment().format(constants.DATE_FORMAT.DB),
+                    updated_at:moment().format(constants.DATE_FORMAT.DB)
                     }, {transaction: t}).then(function (user) {
                         const roleIds = (req.body.role_id).split(',').map(val=>{ return {user_id:user.id,role_id:val}});
                         return models.user_roles.bulkCreate(roleIds, {transaction: t});
                 });
-              
+
               }).then(function (result) {
                   resolve(result);
                 // Transaction has been committed
@@ -318,9 +319,9 @@ UserController.addUserAndRoles = (context, req)=>{
                 // err is whatever rejected the promise chain returned to the transaction callback
               });
         } catch (error) {
-            reject(error);           
+            reject(error);
         }
-    });    
+    });
 }
 UserController.updateUserAndRoles = (context, req)=>{
     return new Promise( async (resolve,reject)=>{
@@ -337,18 +338,18 @@ UserController.updateUserAndRoles = (context, req)=>{
                     state: req.body.state,
                     country_code: req.body.country_code,
                     postal_code: req.body.postal_code,
-                    email: req.body.email,     
+                    email: req.body.email,
                     organization_id: req.body.organization_id,
                     active: req.body.active,
                     country_id: req.body.country_id?req.body.country_id:null,
-                    updated_at:moment().format(AppConstant.C.dateFormat.DBDateTimeFormat)
+                    updated_at:moment().format(constants.DATE_FORMAT.DB)
                     },{where : {id:req.body.id}}, {transaction: t}).then(function (user) {
                         return models.user_roles.destroy({where : {user_id:req.body.id}}, {transaction: t});
                 }).then(function (affectedRows) {
                         const roleIds = (req.body.role_id).split(',').map(val=>{ return {user_id:req.body.id,role_id:val}});
                         return models.user_roles.bulkCreate(roleIds, {transaction: t});
                 });
-              
+
               }).then(function (result) {
                   resolve(result);
                 // Transaction has been committed
@@ -359,9 +360,9 @@ UserController.updateUserAndRoles = (context, req)=>{
                 // err is whatever rejected the promise chain returned to the transaction callback
               });
         } catch (error) {
-            reject(error);           
+            reject(error);
         }
-    });    
+    });
 }
 UserController.deleteUser = async(context,req) => {
     try {
@@ -374,10 +375,10 @@ UserController.deleteUser = async(context,req) => {
         const result = await models.user.destroy({where:{id:userId}});
         const roleResult = await models.user_roles.destroy({where:{user_id:userId}});
         if(result){
-            const res = utils.successFormater(200,{},AppConstant.EC.RECORD_DELETE_SUCCESSFULLY);
+            const res = utils.successFormater(200,{},constants.MESSAGES.RECORD_DELETE_SUCCESSFULLY);
             utils.sendResponse(context,req,200,res);
         } else {
-            const res = utils.successFormater(200,{},AppConstant.EC.RECORD_ALREADY_DELETE);
+            const res = utils.successFormater(200,{},constants.MESSAGES.RECORD_ALREADY_DELETE);
             utils.sendResponse(context,req,200,res);
         }
     } catch (error) {
@@ -404,11 +405,11 @@ UserController.sendForgotPasswordEmail = async(context,req) => {
             if(res){
                 emailHelper.sendTemplateEmail({
                     to:[{email:result.email}],
-                    templateId:AppConstant.C.emailTemplateID.forgotPassword,
+                    templateId:config.email.template.forgotPassword,
                     dynamicTemplateData:{
                         fullname:result.full_name,
-                        setPasswordURL:`${AppConstant.C.webAppUrl}/setpassword/${token}/1`,
-                        feedbackURL:'finfinder@wildme.org',
+                        setPasswordURL:`${config.urls.webApp}/setpassword/${token}/1`,
+                        feedbackURL:config.email.contactEmail,
                     }
                 });
             }

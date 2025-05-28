@@ -1,7 +1,7 @@
 const observationServiceObj = require('../services/observationService.js');
 const utils = require('../utils.js');
 const models = require('../models');
-const AppConstant = require('../helper/appConstant');
+const constants = require('../config/constants');
 const observationValidator = require('../validators/observationValidator.js');
 const validationHelper 	= require('../helper/validationHelper.js');
 const moment = require('moment');
@@ -29,10 +29,10 @@ ObservationController.uploadObservationMultipart = async (context,req) => {
             cv_result: null,
             created_at:utils.utcToTimeZone(req,fileDetail.created_at)
         };
-        const result = utils.successFormater(200,resData,AppConstant.EC.FILE_UPLOAD_SUCCESSFULLY);
+        const result = utils.successFormater(200,resData,constants.MESSAGES.FILE_UPLOAD_SUCCESSFULLY);
         utils.sendResponse(context,req,200,result);
     } catch (err) {
-        utils.sendResponse(context,req,400,false,err); 
+        utils.sendResponse(context,req,400,false,err);
     }
 }
 ObservationController.uploadObservation = async (context,req) => {
@@ -59,10 +59,10 @@ ObservationController.uploadObservation = async (context,req) => {
             cv_result: null,
             created_at:utils.utcToTimeZone(req,fileDetail.created_at)
         };
-        const result = utils.successFormater(200,resData,AppConstant.EC.FILE_UPLOAD_SUCCESSFULLY);
+        const result = utils.successFormater(200,resData,constants.MESSAGES.FILE_UPLOAD_SUCCESSFULLY);
         utils.sendResponse(context,req,200,result);
     } catch (err) {
-        utils.sendResponse(context,req,400,false,err); 
+        utils.sendResponse(context,req,400,false,err);
     }
 }
 ObservationController.observationCallbackHandler = async(context,req) => {
@@ -96,12 +96,12 @@ ObservationController.observationCallbackHandler = async(context,req) => {
                 console.log("updatedData==================",updatedData);
             } */
         }
-        const result = utils.successFormater(200,req.body,AppConstant.EC.RECORD_UPDATED_SUCCESSFULLY);
+        const result = utils.successFormater(200,req.body,constants.MESSAGES.RECORD_UPDATED_SUCCESSFULLY);
         utils.sendResponse(context,req,200,result);
     } catch (error) {
         utils.sendResponse(context,req,500,false,error);
     }
-    
+
 
 }
 ObservationController.getObservation = async(context,req) => {
@@ -147,7 +147,7 @@ ObservationController.deleteObservation = async(context,req) => {
         const requestId = reqQuery.requestId;
         const result = await models.observation.destroy({where:{request_id:requestId}});
         if(result){
-            const result = utils.successFormater(200,{},AppConstant.EC.RECORD_DELETE_SUCCESSFULLY);
+            const result = utils.successFormater(200,{},constants.MESSAGES.RECORD_DELETE_SUCCESSFULLY);
             utils.sendResponse(context,req,200,result);
         }
     } catch (error) {
@@ -163,7 +163,7 @@ ObservationController.observationReport = async(context,req) => {
         }
         const preparedParams = observationServiceObj.prepareReportData(req);
         const data = await observationServiceObj.observationReport(req,preparedParams);
-        const result = utils.successFormater(200,data,AppConstant.EC.REPORT_SUCCESSFULLY);
+        const result = utils.successFormater(200,data,constants.MESSAGES.REPORT_SUCCESSFULLY);
         utils.sendResponse(context,req,200,result);
     } catch (error) {
         utils.sendResponse(context,req,500,false,error);

@@ -2,7 +2,7 @@ const trainingServiceObj = require('../services/trainingService.js');
 const utils = require('../utils.js');
 const models = require('../models');
 const { Op } = require("sequelize");
-const AppConstant = require('../helper/appConstant');
+const constants = require('../config/constants');
 const trainingValidator = require('../validators/trainingValidator.js');
 const validationHelper 	= require('../helper/validationHelper.js');
 class trainingController{
@@ -28,12 +28,12 @@ trainingController.uploadImageAndUpdateDetail = async (context,req,Files) => {
                     const imageId = imageObj.id;
                     const updateDetail = await trainingServiceObj.updateDetail(imageId,imageDetail);
                 }
-                const result = utils.successFormater(200,Files,AppConstant.EC.FILE_UPLOAD_SUCCESSFULLY);
+                const result = utils.successFormater(200,Files,constants.MESSAGES.FILE_UPLOAD_SUCCESSFULLY);
                 utils.sendResponse(context,req,200,result);
             //}
-        }      
+        }
     } catch (err) {
-        utils.sendResponse(context,req,400,false,err); 
+        utils.sendResponse(context,req,400,false,err);
     }
 }
 trainingController.gettraining = async(context,req) => {
@@ -69,7 +69,7 @@ trainingController.uploadTraining = async(context,req) => {
         await trainingServiceObj.saveTraining(req,fileDetail);
         req.query.requestId = fileDetail.request_id;
         await trainingController.gettraining(context,req);
-        /* const result = utils.successFormater(200,fileDetail,AppConstant.EC.RECORD_CREATE_SUCCESSFULLY);
+        /* const result = utils.successFormater(200,fileDetail,constants.MESSAGES.RECORD_CREATE_SUCCESSFULLY);
         utils.sendResponse(context,req,200,result); */
     } catch (error) {
         utils.sendResponse(context,req,500,false,error);
@@ -85,7 +85,7 @@ trainingController.deleteTraining = async(context,req) => {
         const requestId = reqQuery.requestId;
         const result = await models.training.destroy({where:{request_id:requestId}});
         if(result){
-            const result = utils.successFormater(200,{},AppConstant.EC.RECORD_DELETE_SUCCESSFULLY);
+            const result = utils.successFormater(200,{},constants.MESSAGES.RECORD_DELETE_SUCCESSFULLY);
             utils.sendResponse(context,req,200,result);
         }
     } catch (error) {
@@ -103,7 +103,7 @@ trainingController.updateTraining = async(context,req) => {
         await trainingServiceObj.updateTraining(reqBody.requestId,fileDetail);
         const data = await models.training.findOne({where:{request_id:reqBody.requestId}});
         const modifiedResults = utils.modifiedResult(req, data);
-        const result = utils.successFormater(200,modifiedResults,AppConstant.EC.RECORD_UPDATED_SUCCESSFULLY);
+        const result = utils.successFormater(200,modifiedResults,constants.MESSAGES.RECORD_UPDATED_SUCCESSFULLY);
         utils.sendResponse(context,req,200,result);
     } catch (error) {
         utils.sendResponse(context,req,500,false,error);
@@ -115,25 +115,25 @@ trainingController.importTraining = async (context,req) => {
         const validationRes = await trainingServiceObj.validateCSVData(jsonArray);
         jsonArray = validationRes.jsonArray;
         if(Array.isArray(validationRes.error.invalidData) && validationRes.error.invalidData.length){
-            let responseData = utils.errorFormater(400,validationRes.error,AppConstant.EC.INVALID_FILE_DATA);
+            let responseData = utils.errorFormater(400,validationRes.error,constants.MESSAGES.INVALID_FILE_DATA);
             utils.sendResponse(context,req,400,responseData);
         } else if(Array.isArray(jsonArray) && jsonArray.length){
             const insertedData = await trainingServiceObj.saveTrainingTrans(jsonArray);
             if(!insertedData.invalidDataCnt){
-                const result = utils.successFormater(200,insertedData,AppConstant.EC.FILE_UPLOAD_SUCCESSFULLY);
+                const result = utils.successFormater(200,insertedData,constants.MESSAGES.FILE_UPLOAD_SUCCESSFULLY);
                 utils.sendResponse(context,req,200,result);
             } else {
-                let responseData = utils.errorFormater(400,insertedData,AppConstant.EC.INVALID_FILE_DATA);
+                let responseData = utils.errorFormater(400,insertedData,constants.MESSAGES.INVALID_FILE_DATA);
                 utils.sendResponse(context,req,400,responseData);
-            }            
+            }
         } else {
-            let error = utils.errorObject('TC002',AppConstant.EC.EMPTY_FILE,AppConstant.EC.TECH_ERROR);
+            let error = utils.errorObject('TC002',constants.MESSAGES.EMPTY_FILE,constants.MESSAGES.TECH_ERROR);
             let errArr = new Array(error);
             let responseData = utils.errorFormater(400,errArr);
-            utils.sendResponse(context,req,400,responseData); 
+            utils.sendResponse(context,req,400,responseData);
         }
     } catch (err) {
-        utils.sendResponse(context,req,400,false,err); 
+        utils.sendResponse(context,req,400,false,err);
     }
 }
 module.exports = trainingController

@@ -80,8 +80,9 @@ typings/
 # FuseBox cache
 .fusebox/
 
-# DynamoDB Local files
+# database files
 .dynamodb/
+mysql/*
 
 # TypeScript output
 dist
@@ -92,12 +93,13 @@ bin
 obj
 appsettings.json
 local.settings.json
-config/
 
 # Azurite artifacts
+AzuriteConfig
 __blobstorage__
 __queuestorage__
 __azurite_db*__.json
 
-# VS Code
+# IDE
 .vscode
+.idea
