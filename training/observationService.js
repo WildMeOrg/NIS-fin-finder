@@ -2,13 +2,14 @@ const { BlobServiceClient } = require('@azure/storage-blob');
 const multipart = require('parse-multipart');
 const axios = require('axios');
 const models = require('../models');
+const config = require('../config');
 
 const uploadObservationImage = (req) => {
     return new Promise( async (resolve,reject)=>{
         try {
             const fileDetail = {};
             // Create the BlobServiceClient object which will be used to create a container client
-            const blobServiceClient = BlobServiceClient.fromConnectionString(AppConstant.C.blobConnectionString);
+            const blobServiceClient = BlobServiceClient.fromConnectionString(config.blob.connectionString);
             // Get a reference to a container
             const containerClient = blobServiceClient.getContainerClient('observation-images');
             var bodyBuffer = Buffer.from(req.body);
@@ -26,7 +27,7 @@ const uploadObservationImage = (req) => {
         } catch (error) {
             console.log("error=======",error);
             reject("Issue in upload file, Please try latar!!!");
-        } 
+        }
     });
 }
 const getJobId = (req,fileDetail) => {
@@ -51,7 +52,7 @@ const getJobId = (req,fileDetail) => {
             var config = {
             method: 'post',
             url: 'https://tier2.dyn.wildme.io:5017/api/engine/detect/cnn/lightnet/',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json'
             },
             data : data
@@ -69,7 +70,7 @@ const getJobId = (req,fileDetail) => {
         } catch (error) {
             console.log("Issue in fetch job id=======",error);
             reject(`Issue in fetch job id ==  ${error}`);
-        } 
+        }
     });
 }
 
@@ -93,7 +94,7 @@ const getJobIdResult = (req,fileDetail) => {
         } catch (error) {
             console.log("Issue in fetch job id Result =======",error);
             reject(`Issue in fetch job id result ==  ${error}`);
-        } 
+        }
     });
 }
 
@@ -105,7 +106,7 @@ const saveFileDetail = (req,fileDetail) => {
         } catch (error) {
             console.log("Error in save file detail =======",error);
             reject(`Error in save file detail`);
-        } 
+        }
     });
 }
 

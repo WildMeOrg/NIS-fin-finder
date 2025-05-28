@@ -181,7 +181,7 @@ Utils.isSuperAdmin = (context, req) => {
 }
 
 Utils.isOrgAdmin = (context, req) => {
-    return !Utils.isEmpty(req.userDetail.userRoles) && req.userDetail.userRoles.includes(AppConstant.C.orgAdminRoleId) && !Utils.isSuperAdmin(context, req);
+    return !Utils.isEmpty(req.userDetail.userRoles) && req.userDetail.userRoles.includes(constants.ROLE_ID.ORG_ADMIN) && !Utils.isSuperAdmin(context, req);
 }
 
 Utils.getCSVToJSON = (context, req) => {
@@ -209,15 +209,15 @@ Utils.getTimeZone = (req) => {
     return req.query && req.query.timeZone ? req.query.timeZone : (req.body && req.body.timeZone ? req.body.timeZone : 'Asia/Kolkata');
 }
 
-Utils.utcToTimeZone = (req, datetime, format = AppConstant.C.dateFormat.momentDateTimeFormat) => {
-    var utcCutoff = moment.utc(datetime, AppConstant.C.dateFormat.DBDateTimeFormat);
+Utils.utcToTimeZone = (req, datetime, format = constants.DATE_FORMAT.MOMENT_DATE_TIME) => {
+    var utcCutoff = moment.utc(datetime, constants.DATE_FORMAT.DB);
     var displayCutoff = utcCutoff.clone().tz(Utils.getTimeZone(req));
     return displayCutoff.format(format);
 }
 
 Utils.convertToUTC = (req, datetime) => {
-    var utcCutoff = moment.utc(new Date(datetime), AppConstant.C.dateFormat.DBDateTimeFormat);
-    return utcCutoff.format(AppConstant.C.dateFormat.DBDateTimeFormat);
+    var utcCutoff = moment.utc(new Date(datetime), constants.DATE_FORMAT.DB);
+    return utcCutoff.format(constants.DATE_FORMAT.DB);
 }
 
 Utils.modifiedResult = (req, dataArrOrObj) => {

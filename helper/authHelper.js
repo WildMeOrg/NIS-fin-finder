@@ -10,7 +10,7 @@ const isValidUser = (req)=>{
                 const userDetail = {};
                 const token = req.headers.authorization;
                 const authToken = token.split(' ')[1];
-                var decoded = jwt.verify(authToken, AppConstant.C.JWTTokenSecret);
+                var decoded = jwt.verify(authToken, config.jwt.secret);
 
                 const queryFilter = {
                     where: { email: decoded.userName },

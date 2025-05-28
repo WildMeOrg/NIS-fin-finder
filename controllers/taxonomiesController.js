@@ -40,7 +40,7 @@ taxonomiesController.deleteTaxonomies = async(context,req) => {
         const taxonId = reqQuery.taxonId;
         const result = await models.taxonomies.destroy({where:{taxon_id:taxonId}});
         if(result){
-            const result = utils.successFormater(200,{},AppConstant.EC.RECORD_DELETE_SUCCESSFULLY);
+            const result = utils.successFormater(200,{},constants.MESSAGES.RECORD_DELETE_SUCCESSFULLY);
             utils.sendResponse(context,req,200,result);
         }
     } catch (error) {
