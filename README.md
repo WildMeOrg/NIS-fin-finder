@@ -4,3 +4,6 @@ FinFinder is an application owned by Conservation X Labs and developed by Conser
 
 
 Copyright (c) 2025 Conservation X Labs.
+
+
+<!-- Security scan triggered at 2025-09-01 22:44:33 -->
