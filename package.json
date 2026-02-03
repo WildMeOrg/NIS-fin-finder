@@ -14,7 +14,7 @@
     "csvtojson": "^2.0.10",
     "dotenv-azure": "^2.0.0",
     "json2csv": "^5.0.7",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "moment": "^2.29.1",
     "mysql2": "^2.3.3",
     "nodemailer": "^6.7.2",
